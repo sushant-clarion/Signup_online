@@ -3,11 +3,21 @@
     {
         public function index()
         {
-            if (isset($_POST['btnRegistration']) && $_POST['btnRegistration'] == "save"){ 
-                $this->bind();                                                            
-                $this->registry->template->data = $this->getModelData(); 
-                $this->registry->template->contents = $this->registry->template->partial('paymentView.php');
+            if (isset($_POST['btnRegistration']) && $_POST['btnRegistration'] == "save"){
+                $this->registry->template->state        = $_POST['state'];
+                $this->registry->template->city         = $_POST['city'];
+                $this->registry->template->zip          = $_POST['zip'];
+                $this->registry->template->address      = $_POST['address1'].", ".$_POST['address2'];
+                $this->registry->template->unique_id    = $this->bind();
+                $this->registry->template->data         = $this->getModelData(); 
+                $this->registry->template->contents     = $this->registry->template->partial('paymentView.php');
                 $this->registry->template->show('indexView.php');
+            }elseif (isset($_POST['btnPayment']) && $_POST['btnPayment'] == "save"){
+                $transaction = $this->doPayment();
+                $this->registry->template->data = $this->getModelData();
+                //var_dump($this->registry->template->contents);
+                $this->registry->template->contents = $this->registry->template->partial('successView.php');
+                $this->registry->template->show('indexView.php');  
             }else{
                 $this->registry->template->data = $this->getModelData();
                 //var_dump($this->registry->template->contents);
@@ -26,6 +36,10 @@
         private function bind(){
             $model = RegistrationModel::getInstance();
             return $model->save();
+        }
+        private function doPayment(){
+            $model = RegistrationModel::getInstance();
+            return $model->payment();
         }
     }
 ?>

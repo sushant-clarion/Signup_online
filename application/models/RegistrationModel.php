@@ -34,8 +34,12 @@
         public function save(){
             $this->createMember($_POST);
             $unique_id = $this->aMemberSubscription($_POST);
-            //return $database->database;
             return $unique_id;
+        }
+        
+        public function payment(){
+            $transaction = $this->aMemberTransaction($_POST);  
+            return $transaction;
         }
         
         private function createMember($data){
@@ -50,6 +54,17 @@
             $Query .= "'".$data['state']."', '".$data['zip']."', '".$data['phone']."', '".$data['email']."')";
             //echo$Query;
             $database->query($Query);
+        }
+        
+        private function createTransaction($data){
+            global $database; 
+            $Query  = "INSERT INTO transaction ";
+            $Query .= "(";
+            $Query .=   "member_id, amount, transaction_date, trasaction_status";
+            $Query .= ") ";
+            $Query .= "VALUES (";
+            $Query .=   "";
+            $Query .= ")";
         }
         
         /*
@@ -129,8 +144,6 @@
             $this->unique_id = substr($returndata,$start,22);
             curl_close( $ch );
             //echo "<BR>",print_r($returndata);exit;
-            
-            $transaction = $this->aMemberTransaction($_POST);
             return $this->unique_id;
         }
         
@@ -141,24 +154,24 @@
             //$urltopost = "http://d5e8dce.amdemo.com/payment/cc-demo/cc";
             $urltopost = "http://d5e8dce.amdemo.com/payment/authorize-cim/cc";
             $datatopost = array (
-                "cc_name_f" => "Demo",
-                "cc_name_l" => "Singh",
-                "cc_type" => "visa",
-                "cc_number" => "4111-1111-1111-1111",
-                "cc_expire[m]" => "5",
-                "cc_expire[y]" => "2021",
-                "cc_code" => "123",
-                "country" => "IN",
-                "state" => "IN-MM",
-                "cc_street" => "Baner",
-                "cc_city" => "Pune",
-                "cc_zip" => "414001",
+                "cc_name_f" => $data['pay_fname'],
+                "cc_name_l" => $data['pay_lname'],
+                "cc_type" => $data['card_type'],
+                "cc_number" => $data['card_number'],
+                "cc_expire[m]" => $data['exp_month'],
+                "cc_expire[y]" => $data['exp_year'],
+                "cc_code" => $data['cvv_number'],
+                "country" => "US",
+                "state" => $data['state'],
+                "cc_street" => $data['address'],
+                "cc_city" => $data['city'],
+                "cc_zip" => $data['zip'],
                 "action" => "cc",
                 "_save_" => "cc",
                 "_cc_" => "    Subscribe And Pay    ",
-                "id" => $this->unique_id,           
+                "id" => $data['unique_id'],           
             );
-
+            //var_dump($datatopost);exit;
             $ch = curl_init ($urltopost);
             curl_setopt ($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt ($ch, CURLOPT_HEADER, false);
@@ -170,13 +183,12 @@
             curl_setopt ($ch, CURLOPT_POSTFIELDS, $datatopost);
             curl_setopt ($ch, CURLOPT_RETURNTRANSFER, true);
             $returndata = curl_exec ($ch);
-            echo "<BR>",print_r($returndata);exit;
-            $start = strpos($returndata,'id="id-0" value="');
-            $start += 17;
-            $unique_id = substr($returndata,$start,22);
-            curl_close( $ch );
-            
-            return $unique_id;
+            $start = strpos($returndata,'Order reference:');
+            $end   = strpos($returndata,'Date and time of payment:');
+            $len   = $end - $start;
+            $tran_id = str_replace("Order reference:","",substr($returndata,$start,$len));
+            return $tran_id;
+            //echo "<BR>",print_r($returndata);exit;
         }
     }
 ?>
