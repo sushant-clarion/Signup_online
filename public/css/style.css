@@ -1,0 +1,88 @@
+@import url(bootstrap.min.css);
+@font-face {
+    font-family: 'Museo900';
+    src: url('http://hugeclub.com/type/museo900-regular-webfont.eot');
+    src: local('☺'), url('http://hugeclub.com/type/museo900-regular-webfont.woff') format('woff'), url('http://hugeclub.com/type/museo900-regular-webfont.ttf') format('truetype'), url('http://hugeclub.com/type/museo900-regular-webfont.svg#webfont8DHVn8JL') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'MuseoSans500';
+    src: url('http://hugeclub.com/type/museosans_500-webfont.eot');
+    src: local('☺'), url('http://hugeclub.com/type/museosans_500-webfont.woff') format('woff'), url('http://hugeclub.com/type/museosans_500-webfont.ttf') format('truetype'), url('http://hugeclub.com/type/museosans_500-webfont.svg#webfont1sXkAXDZ') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+body {
+	background: #fff url(http://hugeclub.com/images/bg.jpg) repeat;
+}
+h1, h2, h3, legend {
+	font-family: 'Museo900', georgia, serif;
+  	color: #3B3737;
+  	font-weight: normal;
+}
+h1 {color: #BF2A1D;}
+.progress {
+	background: #D9F1FC;
+}
+#container {
+  width:700px;
+  margin:40px auto;
+}
+#container form {
+	margin:40px 0;
+	position: relative;
+	padding-right:150px;
+}
+.checkout #container form, .success #container form, .terms #container form {
+	padding-right:19px;
+}
+.progress { width:92%; }
+.success .progress, .checkout .progress {width:100%;}
+
+#container #running_total {
+	position:absolute;
+	top:20px;
+	right:-122px;
+	width:230px;
+	background:#fff;
+	border:1px solid #ccc;
+	padding:20px;
+	-moz-border-radius:5px;
+	-webkit-border-radius:5px;
+	border-radius:5px;
+	box-shadow:0 0 20px 2px rgba(0, 0, 0, .1);
+}
+#container #running_total h2, #container #running_total h3 {
+	font-weight:normal;
+}
+#container #running_total .total td {
+	font-weight:bold;
+	padding-top:40px;
+}
+#container #running_total .recurring td {
+	font-style:italic;
+	font-size:.89em;
+	color:#666;
+}
+form .controls.input-margin input {
+	margin-bottom:10px;
+}
+form .form-actions {
+	text-align:center;
+	padding-left:0 !important;
+}
+.checkout form tr td:nth-child(3), .checkout form tr td:nth-child(4), .checkout form tr td:nth-child(5) {
+	font-style:italic;
+}
+.checkout .break td {
+	padding-top:40px;
+}
+.todays_total, .todays_total h4 {
+	font-size:1.2em;
+}
+.terms a {
+	color:#333;
+	text-decoration:underline;
+}
