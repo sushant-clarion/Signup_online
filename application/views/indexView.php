@@ -39,5 +39,26 @@
         <div role="main">
             <?php echo $contents;?>
         </div>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+        <script>window.jQuery || document.write('<script src="assets/js/libs/jquery-1.7.2.min.js"><\/script>')</script>
+
+        <script src="public/js/libs/bootstrap.min.js"></script>
+        <script src="public/js/libs/jquery.validate.js"></script>
+        <script src="public/js/plugins.js"></script>
+        <script src="public/js/script.js"></script>
+
+        <script>
+            $(function (){
+                toggle_fields();
+                
+            });
+
+        </script>
+        <script>
+            var _gaq=[['_setAccount','UA-XXXXX-X'],['_trackPageview']];
+            (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+            g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+            s.parentNode.insertBefore(g,s)}(document,'script'));
+        </script>
     </body>
 </html>

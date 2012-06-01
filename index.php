@@ -9,7 +9,7 @@
     global $database;
     $router = new Router();
     $registry = new Registry();
-    $database = new database("mysql","localhost","membership","root","");     
+    $database = new DB("membership", "localhost", "root","");     
     $registry->template = new Template();
 
     $router->route($registry);

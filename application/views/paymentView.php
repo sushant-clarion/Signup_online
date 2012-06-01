@@ -186,5 +186,6 @@ END;
              <input type="hidden" name="city" value="<?php echo $city;?>">
              <input type="hidden" name="address" value="<?php echo $address;?>">
              <input type="hidden" name="zip" value="<?php echo $zip;?>">
+             <input type="hidden" name="member_id" value="<?php echo $member_id;?>">
             <?php //include ("includes/_running_total.php"); ?>
         </form>

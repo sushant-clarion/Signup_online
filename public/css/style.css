@@ -86,3 +86,7 @@ form .form-actions {
 	color:#333;
 	text-decoration:underline;
 }
+.errorMsg{
+    color:red;
+    font-weight: bold;
+}

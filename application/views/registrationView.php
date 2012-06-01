@@ -2,7 +2,11 @@
 
               <fieldset>
                    <legend>Step 1: Primary Member Information</legend>
-
+                   
+                   <div class="errorMsg">
+                      <?php echo (isset($errMsg) && $errMsg != "" ? $errMsg : "") ;?>
+                   </div>
+                  
                    <div class="progress progress-striped active">
                       <div class="bar" style="width: 25%;"></div>
                   </div>
@@ -119,8 +123,8 @@ END;
                             foreach($data[0] as $key=>$val){
                                 $nameAndId = "addtional_service_$cnt";
                                 $cnt++;
-                                $value = $val['aMember_id'];
-                                $label = $val['service_name']." @ $".$val['service_amount'].($val['period'] == 1 ? "/".$val['period_type'] : "/".$val['period']." ".$val['period_type']);
+                                $value = $val->aMember_id;
+                                $label = $val->service_name." @ $".$val->service_amount.($val->period == 1 ? "/".$val->period_type : "/".$val->period." ".$val->period_type);
                                 echo <<<END
                                     <label class="checkbox" for="tanning">
                                         <input type="checkbox" id="$nameAndId" name="$nameAndId" value="$value"> $label
@@ -144,8 +148,8 @@ END;
                     <?php
                         $cnt = 1;
                         foreach($data[1] as $key=>$val){
-                            $value      = $val['aMember_id'];
-                            $label      = $val['service_name']." ($".$val['service_amount'].($val['period'] == 1 ? "/".$val['period_type'] : "/".$val['period']." ".$val['period_type']).")";
+                            $value      = $val->aMember_id;
+                            $label      = $val->service_name." ($".$val->service_amount.($val->period == 1 ? "/".$val->period_type : "/".$val->period." ".$val->period_type).")";
                             $fnameId    = "child_".$cnt."_fname";
                             $lnameId    = "child_".$cnt."_lname";
                             $ageId      = "child_".$cnt."_age";

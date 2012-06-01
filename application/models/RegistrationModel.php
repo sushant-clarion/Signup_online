@@ -22,8 +22,8 @@
             $Query = "SELECT * FROM additional_services ORDER BY order_by";
             $database->query($Query);
             $data = array();
-            while ($row = $database->get_row()){
-                $data[$row['is_child_care']][]= $row;
+            while ($row = $database->fetchNextObject()){
+                $data[$row->is_child_care][]= $row;
             } 
             return $data;
         }
@@ -32,14 +32,25 @@
         * To add data into the database
         */
         public function save(){
-            $this->createMember($_POST);
-            $unique_id = $this->aMemberSubscription($_POST);
-            return $unique_id;
+            $response              = array("member_id"=>"", "unique_id"=>"");
+            $response['member_id'] = $this->createMember($_POST);
+            $response['unique_id'] = $this->aMemberSubscription($_POST);
+            return $response;
         }
         
         public function payment(){
-            $transaction = $this->aMemberTransaction($_POST);  
-            return $transaction;
+            $response                   = array("id"=>"", "transaction_id"=>"");
+            $response['id']             = $this->createTransaction($_POST);
+            
+            if ($response['id']){
+                $response['transaction_id'] = $this->aMemberTransaction($_POST);  
+            }
+            
+            if ($response['transaction_id'] != ""){
+                $this->updateTransaction($response['id'], $response['transaction_id']);
+                return true;
+            }
+            return false;
         }
         
         private function createMember($data){
@@ -54,17 +65,29 @@
             $Query .= "'".$data['state']."', '".$data['zip']."', '".$data['phone']."', '".$data['email']."')";
             //echo$Query;
             $database->query($Query);
+            $member_id = $database->lastInsertedId();
+            return $member_id;
         }
         
         private function createTransaction($data){
             global $database; 
             $Query  = "INSERT INTO transaction ";
             $Query .= "(";
-            $Query .=   "member_id, amount, transaction_date, trasaction_status";
+            $Query .=   "member_id, amount, transaction_date";
             $Query .= ") ";
             $Query .= "VALUES (";
-            $Query .=   "";
+            $Query .=   "'".$data['member_id']."', '20', UNIX_TIMESTAMP()";
             $Query .= ")";
+            $database->query($Query);
+            $id     = $database->lastInsertedId();
+            return $id;
+        }
+        
+        private function updateTransaction($id, $tran_id){
+            global $database;
+            $Query  = "UPDATE transaction SET transaction_id = '$tran_id', trasaction_status = 'S' WHERE id = $id";
+            $database->query($Query);
+            return true;
         }
         
         /*
@@ -140,11 +163,15 @@
             $returndata = curl_exec ($ch);
             
             $start = strpos($returndata,'id="id-0" value="');
-            $start += 17;
-            $this->unique_id = substr($returndata,$start,22);
-            curl_close( $ch );
-            //echo "<BR>",print_r($returndata);exit;
-            return $this->unique_id;
+            if (trim($start) != ""){
+                $start += 17;
+                $this->unique_id = substr($returndata,$start,22);
+                curl_close( $ch );
+                echo "<BR>",print_r($returndata);exit;
+                return $this->unique_id;
+            }else{
+                return 0;
+            }
         }
         
         /*
@@ -187,7 +214,7 @@
             $end   = strpos($returndata,'Date and time of payment:');
             $len   = $end - $start;
             $tran_id = str_replace("Order reference:","",substr($returndata,$start,$len));
-            return $tran_id;
+            return trim(strip_tags($tran_id));
             //echo "<BR>",print_r($returndata);exit;
         }
     }

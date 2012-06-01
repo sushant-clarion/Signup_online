@@ -1,331 +1,292 @@
 <?php
-/**
-* Database class
-*
-* @author    Sven Wagener <sven_dot_wagener_at_rheinschmiede_dot_de>
-* @copyright Sven Wagener
-* @include 	 Funktion:_include_
-*/
-class database{
-	var $database_types="";
-	
-	var $db_connect="";
-	var $db_close="";
-	var $db_select_db="";
-	var $db_query="";
-	var $db_error="";
-	var $db_error_nr="";
-	var $db_fetch_array="";
-	var $db_num_rows="";
-	
-	var $host;
-	var $database;
-	var $user;
-	var $password;
-	var $port;
-	var $database_type;
-	var $dsn;
-	
-	var $sql;
-	
-	var $con; // variable for connection id
-	var $con_string; // variable for connection string
-	var $query_id; // variable for query id
-	
-	var $errors; // variable for error messages
-	var $error_count=0; // variable for counting errors
-	var $error_nr;
-	var $error;
-	
-	var $debug=false; // debug mode off
-	
-	/**
-	* Constructor of class - Initializes class and connects to the database
-	* @param string $database_type the name of the database (ifx=Informix,msql=MiniSQL,mssql=MS SQL,mysql=MySQL,pg=Postgres SQL,sybase=Sybase)
-	* @param string $host the host of the database
-	* @param string $database the name of the database
-	* @param string $user the name of the user for the database
-	* @param string $password the passord of the user for the database
-	* @desc Constructor of class - Initializes class and connects to the database.
-	*
-	*  You can use this shortcuts for the database type:
-	*
-	* 		ifx -> INFORMIX
-	* 		msql -> MiniSQL
-	* 		mssql -> Microsoft SQL Server
-	* 		mysql -> MySQL
-	*		odbc -> ODBC
-	* 		pg -> Postgres SQL
-	*		sybase -> Sybase
-	*/
-	function database($database_type,$host,$database,$user,$password,$port=false,$dsn=false){
-		$database_type=strtolower($database_type);
-		$this->host=$host;
-		$this->database=$database;
-		$this->user=$user;
-		$this->password=$password;
-		$this->port=$port;
-		$this->dsn=$dsn;
-		
-		$this->database_types=array("ifx","msql","mssql","mysql","odbc","pg","sybase");
-		
-		// Setting database type and connect to database
-		if(in_array($database_type,$this->database_types)){
-			$this->database_type=$database_type;
-			
-			$this->db_connect=$this->database_type."_connect";
-			$this->db_close=$this->database_type."_close";
-			$this->db_select_db=$this->database_type."_select_db";
-			
-			if($database_type=="odbc"){
-				$this->db_query=$this->database_type."_exec";
-				$this->db_fetch_array=$this->database_type."_fetch_row";
-				$this->db_error=$this->database_type."_errormsg";
-				
-			}else{
-				$this->db_query=$this->database_type."_query";
-				$this->db_fetch_array=$this->database_type."_fetch_array";
-				$this->db_error=$this->database_type."_error";
-				$this->db_error_nr=$this->database_type."_errno";
-			}
-			
-			$this->db_num_rows=$this->database_type."_num_rows";
-			
-			return $this->connect();
-		}else{
-			$this->halt("Database type not supported");
-			return false;
-		}
-	}
-	
-	/**
-	* This function connects the database
-	* @return boolean $is_connected Returns true if connection was successful otherwise false
-	* @desc This function connects to the database which is set in the constructor
-	*/
-	function connect(){
-		// Selecting connection function and connecting
-		
-		if($this->con==""){
-			// INFORMIX
-			if($this->database_type=="ifx"){
-				$this->con=call_user_func($this->db_connect,$this->database."@".$this->host,$this->user,$this->password);
-			}else if($this->database_type=="mysql"){
-				// With port
-				if(!$this->port){
-					$this->con=call_user_func($this->db_connect,$this->host.":".$this->port,$this->user,$this->password);
-				}
-				// Without port
-				else{
-					$this->con=call_user_func($this->db_connect,$this->host,$this->user,$this->password);
-				}
-				// mSQL
-			}else if($this->database_type=="msql"){
-				$this->con=call_user_func($this->db_connect,$this->host,$this->user,$this->password);
-				// MS SQL Server
-			}else if($this->database_type=="mssql"){
-				$this->con=call_user_func($this->db_connect,$this->host,$this->user,$this->password);
-				// ODBC
-			}else if($this->database_type=="odbc"){
-				$this->con=call_user_func($this->db_connect,$this->dsn,$this->user,$this->password);
-				// Postgres SQL
-			}else if($this->database_type=="pg"){
-				// With port
-				if(!$this->port){
-					$this->con=call_user_func($this->db_connect,"host=".$this->host." port=".$this->port." dbname=".$this->database." user=".$this->user." password=".$this->password);
-				}
-				// Without port
-				else{
-					$this->con=call_user_func($this->db_connect,"host=".$this->host." dbname=".$this->database." user=".$this->user." password=".$this->password);
-				}
-				// Sybase
-			}else if($this->database_type=="sybase"){
-				$this->con=call_user_func($this->db_connect,$this->host,$this->user,$this->password);
-			}
-			
-			if(!$this->con){
-				$this->halt("Wrong connection data! Can't establish connection to host.");
-				return false;
-			}else{
-				if($this->database_type!="odbc"){
-					if(!call_user_func($this->db_select_db,$this->database,$this->con)){
-						$this->halt("Wrong database data! Can't select database.");
-						return false;
-					}else{
-						return true;
-					}
-				}
-			}
-		}else{
-			$this->halt("Already connected to database.");
-			return false;
-		}
-	}
-	
-	/**
-	* This function disconnects from the database
-	* @desc This function disconnects from the database
-	*/
-	function disconnect(){
-		if(@call_user_func($this->db_close,$this->con)){
-			return true;
-		}else{
-			$this->halt("Not connected yet");
-			return false;
-		}
-	}
-	
-	/**
-	* This function starts the sql query
-	* @param string $sql_statement the sql statement
-	* @return boolean $successfull returns false on errors otherwise true
-	* @desc This function disconnects from the database
-	*/
-	function query($sql_statement){
-		$this->sql=$sql_statement;
-		if($this->debug){
-			printf("<!-- SQL statement: %s<br />//-->\r\n",$this->sql);			
-		}
-		if($this->database_type=="odbc"){
-			// ODBC
-			if(!$this->query_id=call_user_func($this->db_query,$this->con,$this->sql)){
-				$this->halt("No database connection exists or invalid query");
-			}else{
-				if (!$this->query_id) {
-					$this->halt("Invalid SQL Query");
-					return false;
-				}else{
-					return true;
-				}
-			}
-		}else{
-			// All other databases
-			if(!$this->query_id=call_user_func($this->db_query,$this->sql,$this->con)){
-				$this->halt("No database connection exists or invalid query");
-				
-			}else{
-				if (!$this->query_id) {
-					
-					$this->halt("Invalid SQL Query");
-					return false;
-				}else{
-					return true;
-				}
-			}
-		}
-	}
-	
-	/**
-	* This function returns the last error
-	* @return string $error the error as string
-	* @desc This function returns the last error
-	*/
-	function get_error(){
-		return call_user_func($this->db_error,$this->con);
-	}
-	
-	/**
-	* This function returns the last error id
-	* @return int $error the error as integer
-	* @desc This function returns the last error id
-	*/
-	function get_error_nr(){
-		return call_user_func($this->db_error_nr,$this->con);
-	}
-	
-	/**
-	* This function returns a row of the resultset
-	* @return array $row the row as array or false if there is no more row
-	* @desc This function returns a row of the resultset
-	*/
-	function get_row(){
-		if($this->database_type=="odbc"){
-			// ODBC database
-			if($row=call_user_func($this->db_fetch_array,$this->query_id)){
-				
-				for ($i=1; $i<=odbc_num_fields($this->query_id); $i++) {
-					$fieldname=odbc_field_name($this->query_id,$i);
-					$row_array[$fieldname]=odbc_result($this->query_id,$i);
-				}
-				return $row_array;
-			}else{
-				return false;
-			}
-		}else{
-			// All other databases
-			$row=call_user_func($this->db_fetch_array,$this->query_id);
-			return $row;
-		}
-	}
-	
-	/**
-	* This function returns number of rows in the resultset
-	* @return int $row_count the nuber of rows in the resultset
-	* @desc This function returns number of rows in the resultset
-	*/
-	function count_rows(){
-		$row_count=call_user_func($this->db_num_rows,$this->query_id);
-		if($row_count>=0){
-			return $row_count;
-		}else{
-			$this->halt("Can't count rows before query was made");
-			return false;
-		}
-	}
-	/**
-	* This function returns all tables of the database in an array
-	* @return array $tables all tables of the database in an array
-	* @desc This function returns all tables of the database in an array
-	*/
-	function get_tables(){
-		if($this->database_type=="odbc"){
-			// ODBC databases
-			$tablelist=odbc_tables($this->con);
-			
-			for($i=0;odbc_fetch_row($tablelist);$i++) {
-				$tables[$i]=odbc_result($tablelist,3);
-			}
-			return $tables;
-		}else{
-			// All other databases
-			$tables = "";
-			$sql="SHOW TABLES";
-			$this->query_id($sql);
-			for($i=0;$data=$this->get_row();$i++){
-				$tables[$i]=$data['Tables_in_'.$this->database];
-			}
-			return $tables;
-		}
-	}
-	
-	/**
-	* Prints out a error message
-	* @param string $message all occurred errors as array
-	* @desc Returns all occurred errors
-	*/
-	function halt($message){
-		if($this->debug){
-			$this->error_nr=$this->get_error_nr();
-			$this->error=$this->get_error();
-					
-			printf("Error: %s<br />\n", $message);
-			
-			if($this->error_nr!="" && $this->error!=""){
-				printf("Database Error: %s (%s)<br />\n",$this->error_nr,$this->error);
-			}
-			die ("Session halted.");
-		}
-	}
-	
-	/**
-	* Switches to debug mode
-	* @param boolean $switch
-	* @desc Switches to debug mode
-	*/
-	function debug_mode($debug=true){
-		$this->debug=$debug;
-	}
-	
-	
-}
+  /** A PHP class to access MySQL database with convenient methods
+    * in an object oriented way, and with a powerful debug system.\n
+    * Licence:  LGPL \n
+    * Web site: http://slaout.linux62.org/
+    * @version  1.0
+    * @author   S&eacute;bastien Lao&ucirc;t (slaout@linux62.org)
+    */
+  class DB
+  {
+    /** Put this variable to true if you want ALL queries to be debugged by default:
+      */
+    var $defaultDebug = false;
+
+    /** INTERNAL: The start time, in miliseconds.
+      */
+    var $mtStart;
+    /** INTERNAL: The number of executed queries.
+      */
+    var $nbQueries;
+    /** INTERNAL: The last result ressource of a query().
+      */
+    var $lastResult;
+
+    /** Connect to a MySQL database to be able to use the methods below.
+      */
+    function DB($base, $server, $user, $pass)
+    {
+      $this->mtStart    = $this->getMicroTime();
+      $this->nbQueries  = 0;
+      $this->lastResult = NULL;
+      mysql_connect($server, $user, $pass) or die('Server connexion not possible.');
+      mysql_select_db($base)               or die('Database connexion not possible.');
+    }
+
+    /** Query the database.
+      * @param $query The query.
+      * @param $debug If true, it output the query and the resulting table.
+      * @return The result of the query, to use with fetchNextObject().
+      */
+    function query($query, $debug = -1)
+    {
+      $this->nbQueries++;
+      $this->lastResult = mysql_query($query) or $this->debugAndDie($query);
+
+      $this->debug($debug, $query, $this->lastResult);
+
+      return $this->lastResult;
+    }
+    /** Do the same as query() but do not return nor store result.\n
+      * Should be used for INSERT, UPDATE, DELETE...
+      * @param $query The query.
+      * @param $debug If true, it output the query and the resulting table.
+      */
+    function execute($query, $debug = -1)
+    {
+      $this->nbQueries++;
+      mysql_query($query) or $this->debugAndDie($query);
+
+      $this->debug($debug, $query);
+    }
+    /** Convenient method for mysql_fetch_object().
+      * @param $result The ressource returned by query(). If NULL, the last result returned by query() will be used.
+      * @return An object representing a data row.
+      */
+    function fetchNextObject($result = NULL)
+    {
+      if ($result == NULL)
+        $result = $this->lastResult;
+
+      if ($result == NULL || mysql_num_rows($result) < 1)
+        return NULL;
+      else
+        return mysql_fetch_object($result);
+    }
+    /** Get the number of rows of a query.
+      * @param $result The ressource returned by query(). If NULL, the last result returned by query() will be used.
+      * @return The number of rows of the query (0 or more).
+      */
+    function numRows($result = NULL)
+    {
+      if ($result == NULL)
+        return mysql_num_rows($this->lastResult);
+      else
+        return mysql_num_rows($result);
+    }
+    /** Get the result of the query as an object. The query should return a unique row.\n
+      * Note: no need to add "LIMIT 1" at the end of your query because
+      * the method will add that (for optimisation purpose).
+      * @param $query The query.
+      * @param $debug If true, it output the query and the resulting row.
+      * @return An object representing a data row (or NULL if result is empty).
+      */
+    function queryUniqueObject($query, $debug = -1)
+    {
+      $query = "$query LIMIT 1";
+
+      $this->nbQueries++;
+      $result = mysql_query($query) or $this->debugAndDie($query);
+
+      $this->debug($debug, $query, $result);
+
+      return mysql_fetch_object($result);
+    }
+    /** Get the result of the query as value. The query should return a unique cell.\n
+      * Note: no need to add "LIMIT 1" at the end of your query because
+      * the method will add that (for optimisation purpose).
+      * @param $query The query.
+      * @param $debug If true, it output the query and the resulting value.
+      * @return A value representing a data cell (or NULL if result is empty).
+      */
+    function queryUniqueValue($query, $debug = -1)
+    {
+      $query = "$query LIMIT 1";
+
+      $this->nbQueries++;
+      $result = mysql_query($query) or $this->debugAndDie($query);
+      $line = mysql_fetch_row($result);
+
+      $this->debug($debug, $query, $result);
+
+      return $line[0];
+    }
+    /** Get the maximum value of a column in a table, with a condition.
+      * @param $column The column where to compute the maximum.
+      * @param $table The table where to compute the maximum.
+      * @param $where The condition before to compute the maximum.
+      * @return The maximum value (or NULL if result is empty).
+      */
+    function maxOf($column, $table, $where)
+    {
+      return $this->queryUniqueValue("SELECT MAX(`$column`) FROM `$table` WHERE $where");
+    }
+    /** Get the maximum value of a column in a table.
+      * @param $column The column where to compute the maximum.
+      * @param $table The table where to compute the maximum.
+      * @return The maximum value (or NULL if result is empty).
+      */
+    function maxOfAll($column, $table)
+    {
+      return $this->queryUniqueValue("SELECT MAX(`$column`) FROM `$table`");
+    }
+    /** Get the count of rows in a table, with a condition.
+      * @param $table The table where to compute the number of rows.
+      * @param $where The condition before to compute the number or rows.
+      * @return The number of rows (0 or more).
+      */
+    function countOf($table, $where)
+    {
+      return $this->queryUniqueValue("SELECT COUNT(*) FROM `$table` WHERE $where");
+    }
+    /** Get the count of rows in a table.
+      * @param $table The table where to compute the number of rows.
+      * @return The number of rows (0 or more).
+      */
+    function countOfAll($table)
+    {
+      return $this->queryUniqueValue("SELECT COUNT(*) FROM `$table`");
+    }
+    /** Internal function to debug when MySQL encountered an error,
+      * even if debug is set to Off.
+      * @param $query The SQL query to echo before diying.
+      */
+    function debugAndDie($query)
+    {
+      $this->debugQuery($query, "Error");
+      die("<p style=\"margin: 2px;\">".mysql_error()."</p></div>");
+    }
+    /** Internal function to debug a MySQL query.\n
+      * Show the query and output the resulting table if not NULL.
+      * @param $debug The parameter passed to query() functions. Can be boolean or -1 (default).
+      * @param $query The SQL query to debug.
+      * @param $result The resulting table of the query, if available.
+      */
+    function debug($debug, $query, $result = NULL)
+    {
+      if ($debug === -1 && $this->defaultDebug === false)
+        return;
+      if ($debug === false)
+        return;
+
+      $reason = ($debug === -1 ? "Default Debug" : "Debug");
+      $this->debugQuery($query, $reason);
+      if ($result == NULL)
+        echo "<p style=\"margin: 2px;\">Number of affected rows: ".mysql_affected_rows()."</p></div>";
+      else
+        $this->debugResult($result);
+    }
+    /** Internal function to output a query for debug purpose.\n
+      * Should be followed by a call to debugResult() or an echo of "</div>".
+      * @param $query The SQL query to debug.
+      * @param $reason The reason why this function is called: "Default Debug", "Debug" or "Error".
+      */
+    function debugQuery($query, $reason = "Debug")
+    {
+      $color = ($reason == "Error" ? "red" : "orange");
+      echo "<div style=\"border: solid $color 1px; margin: 2px;\">".
+           "<p style=\"margin: 0 0 2px 0; padding: 0; background-color: #DDF;\">".
+           "<strong style=\"padding: 0 3px; background-color: $color; color: white;\">$reason:</strong> ".
+           "<span style=\"font-family: monospace;\">".htmlentities($query)."</span></p>";
+    }
+    /** Internal function to output a table representing the result of a query, for debug purpose.\n
+      * Should be preceded by a call to debugQuery().
+      * @param $result The resulting table of the query.
+      */
+    function debugResult($result)
+    {
+      echo "<table border=\"1\" style=\"margin: 2px;\">".
+           "<thead style=\"font-size: 80%\">";
+      $numFields = mysql_num_fields($result);
+      // BEGIN HEADER
+      $tables    = array();
+      $nbTables  = -1;
+      $lastTable = "";
+      $fields    = array();
+      $nbFields  = -1;
+      while ($column = mysql_fetch_field($result)) {
+        if ($column->table != $lastTable) {
+          $nbTables++;
+          $tables[$nbTables] = array("name" => $column->table, "count" => 1);
+        } else
+          $tables[$nbTables]["count"]++;
+        $lastTable = $column->table;
+        $nbFields++;
+        $fields[$nbFields] = $column->name;
+      }
+      for ($i = 0; $i <= $nbTables; $i++)
+        echo "<th colspan=".$tables[$i]["count"].">".$tables[$i]["name"]."</th>";
+      echo "</thead>";
+      echo "<thead style=\"font-size: 80%\">";
+      for ($i = 0; $i <= $nbFields; $i++)
+        echo "<th>".$fields[$i]."</th>";
+      echo "</thead>";
+      // END HEADER
+      while ($row = mysql_fetch_array($result)) {
+        echo "<tr>";
+        for ($i = 0; $i < $numFields; $i++)
+          echo "<td>".htmlentities($row[$i])."</td>";
+        echo "</tr>";
+      }
+      echo "</table></div>";
+      $this->resetFetch($result);
+    }
+    /** Get how many time the script took from the begin of this object.
+      * @return The script execution time in seconds since the
+      * creation of this object.
+      */
+    function getExecTime()
+    {
+      return round(($this->getMicroTime() - $this->mtStart) * 1000) / 1000;
+    }
+    /** Get the number of queries executed from the begin of this object.
+      * @return The number of queries executed on the database server since the
+      * creation of this object.
+      */
+    function getQueriesCount()
+    {
+      return $this->nbQueries;
+    }
+    /** Go back to the first element of the result line.
+      * @param $result The resssource returned by a query() function.
+      */
+    function resetFetch($result)
+    {
+      if (mysql_num_rows($result) > 0)
+        mysql_data_seek($result, 0);
+    }
+    /** Get the id of the very last inserted row.
+      * @return The id of the very last inserted row (in any table).
+      */
+    function lastInsertedId()
+    {
+      return mysql_insert_id();
+    }
+    /** Close the connexion with the database server.\n
+      * It's usually unneeded since PHP do it automatically at script end.
+      */
+    function close()
+    {
+      mysql_close();
+    }
+
+    /** Internal method to get the current time.
+      * @return The current time in seconds with microseconds (in float format).
+      */
+    function getMicroTime()
+    {
+      list($msec, $sec) = explode(' ', microtime());
+      return floor($sec / 1000) + $msec;
+    }
+  } // class DB
 ?>
